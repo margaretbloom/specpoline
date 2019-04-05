@@ -19,4 +19,4 @@ run_arch: arch
 	./arch
 
 clean:
-	rm *.o
+	rm -f *.o main spec arch
