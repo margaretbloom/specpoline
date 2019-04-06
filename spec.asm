@@ -26,18 +26,16 @@ SECTION .code
     ;/ \/ \/ \                                                         / \/ \/ \
     
     specpoline:
-        lea rax, [leak.profile]
-
-        xorps xmm0, xmm0
-        TIMES 10 sqrtpd xmm0, xmm0
-
         %ifdef ARCH_STORE
             mov DWORD [buffer], 241     ;Store in the first line
         %endif
 
-        ;add rsp, 8
-        mov QWORD [rsp], rax
-        ret
+        xorps xmm0, xmm0
+        TIMES 40 sqrtpd xmm0, xmm0
+
+        movq rbx, xmm0
+        mov QWORD [rsp+rbx], rax        ;Prevent the store to be executed too early and correct the prediction
+        ret                             ;by a fast recovery through the BOB (no need to wait for it to retire).
 
  
     ;\ /\ /\ /                                                         \ /\ /\ /
@@ -106,14 +104,10 @@ SECTION .code
         push rdx
         push rsi
 
-        
-
         ;Flush the F+R lines
         call flush
 
-        ;Unaligned stack, don't mind
-        ;;lea rax, [.profile]
-        ;;push rax
+        lea rax, [.profile]
         call specpoline
 
         ;O.O 0
